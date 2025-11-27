@@ -78,13 +78,53 @@ class Line
     }
 }
 
+class Puzzle
+{
+    var Width: int
+    var Height: int
+    var TotalCells: int
+    var Cells: array<PuzzleCell>
+    var RowHints: array<int>
+    var ColumnHints: array<int>
+    // there's a "creator or null" property here but 
+    // I get the feeling it's for UI so just a comment for now
+    var Grid: array2<int> // solution grid used in construction
+
+    constructor(width: int, height: int)
+    requires width >= 0 && height >= 0 && (width > 1 || height > 1)
+    {
+        // original function has handling for non-number inputs, which I don't think we need
+        Width := width;
+        Height := height;
+        TotalCells := width * height;
+        /*
+        new;
+        Reset();
+        */
+
+        Cells := new PuzzleCell[0];
+        RowHints := new int[0];
+        ColumnHints := new int[0];
+        Grid := new int[height, width]((_,_) => 0);
+    }
+
+    /*
+    // this is used in a few places, including the constructor, but Dafny constructors don't like init via fn call
+    // so I'm just adding a comment for now and maybe we'll need it later
+    method Reset()
+    modifies Cells, RowHints, ColumnHints
+    {
+        Cells := new PuzzleCell[0];
+        RowHints := new int[0];
+        ColumnHints := new int[0];
+        Grid := new int[height, width]((_,_) => 0);
+    }
+    */
+}
+
 class Solver
 {
     var Lines: array<Line>
-    constructor()
-    {
-        //TODO
-    }
 
     // Propogates PuzzleCell value to all row/column Lines it belongs to.
     // If this solves a Line, marks the Line as solved.
@@ -99,25 +139,23 @@ class Solver
             0 <= m < this.Lines.Length &&
             0 <= n < |this.Lines[m].Cells| &&
             c == this.Lines[m].Cells[n]
+    var Puzzle: Puzzle
+
+    constructor(puzzle: Puzzle)
     {
-        var lineKey: int, cellKey: int, cellsSolved: int;
-        var line : Line;
-        var isRow:bool , isCol: bool;
-        var cell : PuzzleCell;
+        Puzzle := puzzle;
+    }
 
-        for lineKey := 0 to this.Lines.Length
-        invariant 0 <= lineKey <= this.Lines.Length
-        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
-            this.Lines[i].Cells == old(this.Lines[i].Cells)
-        {   
-            line := this.Lines[lineKey];
-            isRow := line.Type == "row" && line.Index == puzzleCell.Row;
-            isCol := line.Type == "column" && line.Index == puzzleCell.Column;
-            cellsSolved := 0;
+    method GetTotalSolved() returns (total: int)
+    {
+        total := 0;
+        var cellKey: int;
 
-            if (isRow || isCol)
+        for cellKey := 0 to this.Puzzle.Cells.Length
+        {
+            if (this.Puzzle.Cells[cellKey].AISolution != NULL)
             {
-                line.UpdateCells(puzzleCell, value);
+                total := total + 1;
             }
         }
     }
