@@ -25,6 +25,77 @@ class Solver
         }
     }
 
+    method FindKnownPositivesAndNegatives(line: PuzzleLine)
+    requires line in Lines[..]
+    /*
+    ensures this.Lines == old(this.Lines)
+    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
+        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    */
+    modifies 
+        line,
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n]
+    {
+        var totalCellCounts: array<int> := new int[line.Length]((_) => 0);
+        var section: Section;
+        var cellCounts: array<int>;
+        var possibleStartIndex: int, start: int, end: int;
+        var cellCount: int, cell: Cell;
+        for sectionKey: int := 0 to line.Sections.Length
+        invariant 0 <= sectionKey < line.Sections.Length
+        {
+            section := line.Sections[sectionKey];
+            cellCounts := new int[line.Length]((_) => 0);
+            // keep two counts: 1) all common cells for this section, and 2) cells where no section can be
+            for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
+            invariant 0 <= startIndexKey < section.PossibleStartIndexes.Length
+            {
+                possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
+                start := possibleStartIndex;
+                end := start + section.Length - 1;
+
+                for i: int := start to end + 1
+                {
+                    cellCounts[i] := cellCounts[i] + 1;
+                    totalCellCounts[i] := totalCellCounts[i] + 1;
+                }
+            }
+            // common to all possibilities, solve as positive
+            for cellCountKey: int := 0 to cellCounts.Length
+            invariant 0 <= cellCountKey < cellCounts.Length
+            {
+                if (0 <= cellCountKey < |line.Cells|)
+                {
+                    cellCount := cellCounts[cellCountKey];
+                    cell := line.Cells[cellCountKey];
+                    if (cell.AISolution == NULL && cellCount == section.PossibleStartIndexes.Length)
+                    {
+                        SetCellSolution(cell, CellValue.1);
+                    }
+                }
+            }
+            // no possible cells, remove as a possibility
+            for cellCountKey: int := 0 to cellCounts.Length
+            invariant 0 <= cellCountKey < cellCounts.Length
+            {
+                if (0 <= cellCountKey < |line.Cells|)
+                {
+                    cellCount := totalCellCounts[cellCountKey];
+                    cell := line.Cells[cellCountKey];
+                    if (cell.AISolution == NULL && cellCount == 0)
+                    {
+                        SetCellSolution(cell, CellValue.0);
+                    }
+                }
+            }
+        }
+        
+    }
+
     method FindAnchoredSections(line: PuzzleLine)
     requires line in Lines[..]
     ensures this.Lines == old(this.Lines)
