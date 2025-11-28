@@ -1,6 +1,6 @@
 include "PuzzleCell.dfy"
 
-class Line 
+class PuzzleLine
 {
     var Type: string
     var Index: int

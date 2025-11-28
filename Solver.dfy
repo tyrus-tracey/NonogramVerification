@@ -3,7 +3,7 @@ include "Puzzle.dfy"
 
 class Solver
 {
-    var Lines: array<Line>
+    var Lines: array<PuzzleLine>
     var Puzzle: Puzzle
 
     constructor(puzzle: Puzzle)
@@ -26,7 +26,7 @@ class Solver
     }
 
     // Propogates PuzzleCell value to all row/column Lines it belongs to.
-    // If this solves a Line, marks the Line as solved.
+    // If this solves a PuzzleLine, marks the PuzzleLine as solved.
     method SetCellSolution(puzzleCell: PuzzleCell, value: CellValue)
     requires this.Lines.Length > 0
     requires forall j:int :: 0 <= j < this.Lines.Length ==> 
@@ -40,7 +40,7 @@ class Solver
             c == this.Lines[m].Cells[n]
     {
         var lineKey: int, cellKey: int, cellsSolved: int;
-        var line : Line;
+        var line : PuzzleLine;
         var isRow:bool , isCol: bool;
         var cell : PuzzleCell;
 
