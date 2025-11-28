@@ -1,4 +1,5 @@
 include "PuzzleCell.dfy"
+include "Section.dfy"
 
 class PuzzleLine
 {
@@ -6,7 +7,7 @@ class PuzzleLine
     var Index: int
     var Length: int
     var MinimumSectionLength: int
-    var Sections: array<array<int>>
+    var Sections: array<Section>
     var Cells: seq<PuzzleCell>
     var Solved: bool
 
@@ -30,6 +31,7 @@ class PuzzleLine
     
     method UpdateCells(puzzleCell: PuzzleCell, value: CellValue)
     modifies this`Solved, this.Cells[..]
+    ensures this.Sections == old(this.Sections)
     {
         var cellsSolved : int := 0;
 

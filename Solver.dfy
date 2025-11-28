@@ -25,6 +25,40 @@ class Solver
         }
     }
 
+    method FindCompletedSections(line: PuzzleLine)
+    requires line in Lines[..]
+    ensures this.Lines == old(this.Lines)
+    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
+        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    modifies 
+        line,
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n]
+    {
+        for sectionKey: int := 0 to line.Sections.Length
+        invariant 0 <= sectionKey <= line.Sections.Length
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+                this.Lines[i].Sections == old(this.Lines[i].Sections)
+        {
+            var section := line.Sections[sectionKey];
+
+            if (!section.Solved && section.PossibleStartIndexes.Length == 1)
+            {
+                var firstNegative := section.PossibleStartIndexes[0] - 1;
+                var lastNegative := section.PossibleStartIndexes[0] + section.Length;
+
+                if (0 <= firstNegative < |line.Cells| && line.Cells[firstNegative].AISolution == CellValue.NULL)
+                {
+                    SetCellSolution(line.Cells[firstNegative], CellValue.0);
+                }
+            }
+        }
+    }
+
     method FindCompletedLines(line: PuzzleLine)
     requires line in Lines[..]
     ensures this.Lines == old(this.Lines)
@@ -79,7 +113,8 @@ class Solver
     method SetCellSolution(puzzleCell: PuzzleCell, value: CellValue)
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
-        this.Lines[j].Cells == old(this.Lines[j].Cells)
+        this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+        this.Lines[j].Sections == old(this.Lines[j].Sections)
     modifies 
         this.Lines[..],
         set c | exists m,n ::
@@ -95,7 +130,8 @@ class Solver
         for lineKey := 0 to this.Lines.Length
         invariant 0 <= lineKey <= this.Lines.Length
         invariant forall i:int :: 0 <= i < this.Lines.Length ==>
-            this.Lines[i].Cells == old(this.Lines[i].Cells)
+            this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+            this.Lines[i].Sections == old(this.Lines[i].Sections)
         {   
             line := this.Lines[lineKey];
             isRow := line.Type == "row" && line.Index == puzzleCell.Row;
