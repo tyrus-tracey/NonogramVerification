@@ -26,7 +26,12 @@ class Solver
     }
 
     method FindAnchoredSections(line: PuzzleLine)
+    requires line in Lines[..]
+    ensures this.Lines == old(this.Lines)
+    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
+        this.Lines[j].Cells == old(this.Lines[j].Cells)
     modifies 
+        line,
         this.Lines[..],
         set c | exists m,n ::
             0 <= m < this.Lines.Length &&
@@ -44,31 +49,40 @@ class Solver
 
             // find sections anchored to start of line
             fillRange := null;
-            for i := 0 to |line.Cells| 
+            for j: int := 0 to |line.Cells| 
+            invariant 0 <= j <= |line.Cells|
+            invariant forall j: int :: 0 <= j < this.Lines.Length ==>
+                this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+                this.Lines[j].Sections == old(this.Lines[j].Sections)
             {
-                if line.Cells[i].AISolution == CellValue.NULL
+                if line.Cells[j].AISolution == CellValue.NULL
                 {
                     break;
                 }
-                else if line.Cells[i].AISolution == CellValue.1
+                else if line.Cells[j].AISolution == CellValue.1
                 {
-                    fillRange := new int[] [i, i + firstSection.Length - 1];
+                    fillRange := new int[] [j, j + firstSection.Length - 1];
                     break;
                 }
             }
 
             if fillRange != null
             {
-                for i := fillRange[0] to fillRange[1] + 1
+                i := fillRange[0];
+                //for i := fillRange[0] to fillRange[1] + 1
+                //doing a while loop for now because not sure how to tell Dafny fr0<=fr1
+                while i <= fillRange[1]
+                invariant fillRange[0] <= i <= fillRange[1] + 1
                 {
-                    if (i < |line.Cells|) 
+                    if (0 <= i < |line.Cells|) 
                     // original code has simply line.cells[i] as the condition; 
-                    // think it's leveraging JavaScripts reading-out-of-bounds behaviour
+                    // think it's leveraging JavaScript's reading-out-of-bounds behaviour
                     {
                         this.SetCellSolution(line.Cells[i],CellValue.1);
                     }
+                    i := i+1;
                 }
-                if (i < |line.Cells|)
+                if (0 <= i < |line.Cells|)
                 {
                     this.SetCellSolution(line.Cells[i],CellValue.0);
                 }
@@ -78,6 +92,8 @@ class Solver
             fillRange := null;
 
             for i := |line.Cells| downto 0
+            invariant fillRange != null ==> fillRange.Length == 2
+            invariant fillRange != null ==> 0 < fillRange[0] <= fillRange[1]
             {
                 if line.Cells[i].AISolution == CellValue.NULL
                 {
@@ -91,16 +107,19 @@ class Solver
             }
             if fillRange != null
             {
-                for i := fillRange[0] to fillRange[1] + 1
+                var k: int := fillRange[0];
+                //for i := fillRange[0] to fillRange[1] + 1
+                while k <= fillRange[1]
                 {
-                    if (i < |line.Cells|)
+                    if (0 <= k < |line.Cells|)
                     {
-                        this.SetCellSolution(line.Cells[i],CellValue.1);
+                        SetCellSolution(line.Cells[k],CellValue.1);
                     }
+                    k := k+1;
                 }
-                if (fillRange[0] - 1 < |line.Cells|)
+                if (0 <= fillRange[0] - 1 < |line.Cells|)
                 {
-                    this.SetCellSolution(line.Cells[fillRange[0] - 1],CellValue.0);
+                    SetCellSolution(line.Cells[fillRange[0] - 1],CellValue.0);
                 }
             }
         }
