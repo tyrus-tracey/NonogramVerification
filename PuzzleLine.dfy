@@ -1,5 +1,4 @@
 include "PuzzleCell.dfy"
-include "Section.dfy"
 
 class PuzzleLine
 {
@@ -12,6 +11,7 @@ class PuzzleLine
     var Solved: bool
 
     constructor()
+    ensures fresh(this.Cells)
     {
         var cell: PuzzleCell := new PuzzleCell();
         Type := "";
@@ -49,5 +49,41 @@ class PuzzleLine
         }
         
         SetSolveState(true);
+    }
+}
+
+class Section
+{
+    var Index: int
+    var Length: int
+    var PossibleStartIndexes: array<int>
+    var KnownIndexes: array<int>
+    var Solved: bool
+
+    constructor(Index: int, Length: int, PossibleStartIndexes: array<int>, KnownIndexes: array<int>)
+    ensures this.Index == Index &&
+        this.Length == Length &&
+        this.PossibleStartIndexes == PossibleStartIndexes &&
+        this.KnownIndexes == KnownIndexes &&
+        this.Solved == false
+    {
+        this.Index := Index;
+        this.Length := Length;
+        this.PossibleStartIndexes := PossibleStartIndexes;
+        this.KnownIndexes := KnownIndexes;
+        this.Solved := false;
+    }
+}
+
+class Chain
+{
+    var Start: int
+    var Length: int
+
+    constructor(Start: int, Length: int)
+    ensures this.Start == Start && this.Length == Length
+    {
+        this.Start := Start;
+        this.Length := Length;
     }
 }
