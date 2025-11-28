@@ -18,9 +18,90 @@ class Solver
 
         for cellKey := 0 to this.Puzzle.Cells.Length
         {
-            if (this.Puzzle.Cells[cellKey].AISolution != NULL)
+            if (this.Puzzle.Cells[cellKey].AISolution != CellValue.NULL)
             {
                 total := total + 1;
+            }
+        }
+    }
+
+    method FindAnchoredSections(line: PuzzleLine)
+    modifies 
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n]
+    {
+        var i: int;
+        var fillRange: array?<int>;
+        var firstSection: Section, lastSection: Section;
+
+        if (line.Sections.Length > 0)
+        {
+            firstSection := line.Sections[0];
+            lastSection  := line.Sections[line.Sections.Length - 1];
+
+            // find sections anchored to start of line
+            fillRange := null;
+            for i := 0 to |line.Cells| 
+            {
+                if line.Cells[i].AISolution == CellValue.NULL
+                {
+                    break;
+                }
+                else if line.Cells[i].AISolution == CellValue.1
+                {
+                    fillRange := new int[] [i, i + firstSection.Length - 1];
+                    break;
+                }
+            }
+
+            if fillRange != null
+            {
+                for i := fillRange[0] to fillRange[1] + 1
+                {
+                    if (i < |line.Cells|) 
+                    // original code has simply line.cells[i] as the condition; 
+                    // think it's leveraging JavaScripts reading-out-of-bounds behaviour
+                    {
+                        this.SetCellSolution(line.Cells[i],CellValue.1);
+                    }
+                }
+                if (i < |line.Cells|)
+                {
+                    this.SetCellSolution(line.Cells[i],CellValue.0);
+                }
+            }
+
+            // find sections anchored to end of line
+            fillRange := null;
+
+            for i := |line.Cells| downto 0
+            {
+                if line.Cells[i].AISolution == CellValue.NULL
+                {
+                    break;
+                }
+                else if line.Cells[i].AISolution == CellValue.1
+                {
+                    fillRange := new int[] [i - lastSection.Length + 1, i];
+                    break;
+                }
+            }
+            if fillRange != null
+            {
+                for i := fillRange[0] to fillRange[1] + 1
+                {
+                    if (i < |line.Cells|)
+                    {
+                        this.SetCellSolution(line.Cells[i],CellValue.1);
+                    }
+                }
+                if (fillRange[0] - 1 < |line.Cells|)
+                {
+                    this.SetCellSolution(line.Cells[fillRange[0] - 1],CellValue.0);
+                }
             }
         }
     }
