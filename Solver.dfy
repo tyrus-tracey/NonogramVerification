@@ -25,13 +25,61 @@ class Solver
         }
     }
 
+    method FindCompletedLines(line: PuzzleLine)
+    requires line in Lines[..]
+    ensures this.Lines == old(this.Lines)
+    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
+        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    modifies 
+        line,
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n]
+    {
+        var totalSectionLength: int := 0;
+        var totalPositiveSolved: int := 0;
+
+        for sectionKey: int := 0 to line.Sections.Length
+        invariant 0 <= sectionKey <= line.Sections.Length
+        {
+            var section := line.Sections[sectionKey];
+            totalSectionLength := totalSectionLength + section.Length;
+        }
+
+        for cellKey: int := 0 to |line.Cells|
+        invariant 0 <= cellKey <= |line.Cells|
+        {
+            var cell := line.Cells[cellKey];
+            if (cell.AISolution == CellValue.1)
+            {
+                totalPositiveSolved := totalPositiveSolved + 1;
+            }
+        }
+
+        if (totalSectionLength == totalPositiveSolved)
+        {
+            for cellKey: int := 0 to |line.Cells|
+            invariant 0 <= cellKey <= |line.Cells|
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Cells == old(this.Lines[i].Cells)
+            {
+                var cell := line.Cells[cellKey];
+                if (cell.AISolution == CellValue.NULL)
+                {
+                    SetCellSolution(cell, CellValue.0);
+                }
+            }
+        }
+    }
+
     // Propogates PuzzleCell value to all row/column Lines it belongs to.
     // If this solves a PuzzleLine, marks the PuzzleLine as solved.
     method SetCellSolution(puzzleCell: PuzzleCell, value: CellValue)
-    requires this.Lines.Length > 0
-    requires forall j:int :: 0 <= j < this.Lines.Length ==> 
-        |this.Lines[j].Cells| > 0
     ensures this.Lines == old(this.Lines)
+    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
+        this.Lines[j].Cells == old(this.Lines[j].Cells)
     modifies 
         this.Lines[..],
         set c | exists m,n ::
