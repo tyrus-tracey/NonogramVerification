@@ -70,9 +70,13 @@ class Solver
             {
                 i := fillRange[0];
                 //for i := fillRange[0] to fillRange[1] + 1
-                //doing a while loop for now because not sure how to tell Dafny fr0<=fr1
+                // doing a while loop for now because not sure how to tell Dafny fr0<=fr1
+                // TODO fix that (should be possible)
                 while i <= fillRange[1]
-                invariant fillRange[0] <= i <= fillRange[1] + 1
+                //invariant fillRange[0] <= i <= fillRange[1] + 1
+                invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+                    this.Lines[i].Sections == old(this.Lines[i].Sections)
                 {
                     if (0 <= i < |line.Cells|) 
                     // original code has simply line.cells[i] as the condition; 
@@ -108,8 +112,13 @@ class Solver
             if fillRange != null
             {
                 var k: int := fillRange[0];
+                // TODO as for loop if possible
                 //for i := fillRange[0] to fillRange[1] + 1
                 while k <= fillRange[1]
+                //invariant fillRange[0] <= i <= fillRange[1] + 1
+                invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+                    this.Lines[i].Sections == old(this.Lines[i].Sections)
                 {
                     if (0 <= k < |line.Cells|)
                     {
