@@ -47,13 +47,13 @@ class Solver
         var possibleStartIndex: int, start: int, end: int;
         var cellCount: int, cell: PuzzleCell;
         for sectionKey: int := 0 to line.Sections.Length
-        invariant 0 <= sectionKey < line.Sections.Length
+        invariant 0 <= sectionKey <= line.Sections.Length
         {
             section := line.Sections[sectionKey];
             cellCounts := new int[line.Length]((_) => 0);
             // keep two counts: 1) all common cells for this section, and 2) cells where no section can be
             for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
-            invariant 0 <= startIndexKey < section.PossibleStartIndexes.Length
+            invariant 0 <= startIndexKey <= section.PossibleStartIndexes.Length
             {
                 possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
                 start := possibleStartIndex;
