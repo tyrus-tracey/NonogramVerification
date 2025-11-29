@@ -44,7 +44,7 @@ class Solver
         var section: Section;
         var cellCounts: array<int>;
         var possibleStartIndex: int, start: int, end: int;
-        var cellCount: int, cell: Cell;
+        var cellCount: int, cell: PuzzleCell;
         for sectionKey: int := 0 to line.Sections.Length
         invariant 0 <= sectionKey < line.Sections.Length
         {
