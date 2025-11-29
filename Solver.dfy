@@ -67,7 +67,7 @@ class Solver
             }
             // common to all possibilities, solve as positive
             for cellCountKey: int := 0 to cellCounts.Length
-            invariant 0 <= cellCountKey < cellCounts.Length
+            invariant 0 <= cellCountKey <= cellCounts.Length
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {
@@ -81,7 +81,7 @@ class Solver
             }
             // no possible cells, remove as a possibility
             for cellCountKey: int := 0 to cellCounts.Length
-            invariant 0 <= cellCountKey < cellCounts.Length
+            invariant 0 <= cellCountKey <= cellCounts.Length
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {
