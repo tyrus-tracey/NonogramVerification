@@ -208,6 +208,7 @@ class Solver
 
     method FindCompletedSections(line: PuzzleLine)
     requires line in Lines[..]
+    ensures line.Sections == old(line.Sections)
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells)
@@ -217,7 +218,11 @@ class Solver
         set c | exists m,n ::
             0 <= m < this.Lines.Length &&
             0 <= n < |this.Lines[m].Cells| &&
-            c == this.Lines[m].Cells[n]
+            c == this.Lines[m].Cells[n],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < this.Lines[m].Sections.Length &&
+            c == this.Lines[m].Sections[n]
     {
         for sectionKey: int := 0 to line.Sections.Length
         invariant 0 <= sectionKey <= line.Sections.Length
@@ -229,13 +234,19 @@ class Solver
 
             if (!section.Solved && section.PossibleStartIndexes.Length == 1)
             {
-                var firstNegative := section.PossibleStartIndexes[0] - 1;
+                var firstNegative: int := section.PossibleStartIndexes[0];
+                firstNegative := firstNegative - 1;
                 var lastNegative := section.PossibleStartIndexes[0] + section.Length;
 
                 if (0 <= firstNegative < |line.Cells| && line.Cells[firstNegative].AISolution == CellValue.NULL)
                 {
                     SetCellSolution(line.Cells[firstNegative], CellValue.0);
                 }
+                if (0 <= lastNegative < |line.Cells| && line.Cells[lastNegative].AISolution == CellValue.NULL)
+                {
+                    SetCellSolution(line.Cells[lastNegative], CellValue.0);
+                }
+                section.Solved := true;
             }
         }
     }
