@@ -2,9 +2,9 @@ datatype CellValue = NULL | 0 | 1
 
 class PuzzleCell
 {
-    var Index: int
-    var Column: int
-    var Row: int
+    var Index: nat
+    var Column: nat
+    var Row: nat
     var Solution: CellValue
     var UserSolution: CellValue
     var AISolution: CellValue

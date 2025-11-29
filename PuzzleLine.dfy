@@ -3,9 +3,9 @@ include "PuzzleCell.dfy"
 class PuzzleLine
 {
     var Type: string
-    var Index: int
-    var Length: int
-    var MinimumSectionLength: int
+    var Index: nat
+    var Length: nat
+    var MinimumSectionLength: nat
     var Sections: array<Section>
     var Cells: seq<PuzzleCell>
     var Solved: bool
@@ -54,13 +54,13 @@ class PuzzleLine
 
 class Section
 {
-    var Index: int
-    var Length: int
-    var PossibleStartIndexes: array<int>
-    var KnownIndexes: array<int>
+    var Index: nat
+    var Length: nat
+    var PossibleStartIndexes: array<nat>
+    var KnownIndexes: array<nat>
     var Solved: bool
 
-    constructor(Index: int, Length: int, PossibleStartIndexes: array<int>, KnownIndexes: array<int>)
+    constructor(Index: nat, Length: nat, PossibleStartIndexes: array<nat>, KnownIndexes: array<nat>)
     ensures this.Index == Index &&
         this.Length == Length &&
         this.PossibleStartIndexes == PossibleStartIndexes &&
@@ -77,10 +77,10 @@ class Section
 
 class Chain
 {
-    var Start: int
-    var Length: int
+    var Start: nat
+    var Length: nat
 
-    constructor(Start: int, Length: int)
+    constructor(Start: nat, Length: nat)
     ensures this.Start == Start && this.Length == Length
     {
         this.Start := Start;

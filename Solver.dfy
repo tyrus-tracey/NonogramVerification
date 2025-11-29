@@ -27,6 +27,7 @@ class Solver
 
     method FindKnownPositivesAndNegatives(line: PuzzleLine)
     requires line in Lines[..]
+    requires line.Length > 0
     /*
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  

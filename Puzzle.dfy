@@ -2,9 +2,9 @@ include "PuzzleCell.dfy"
 
 class Puzzle
 {
-    var Width: int
-    var Height: int
-    var TotalCells: int
+    var Width: nat
+    var Height: nat
+    var TotalCells: nat
     var Cells: array<PuzzleCell>
     var RowHints: array<int>
     var ColumnHints: array<int>
