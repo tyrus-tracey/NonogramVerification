@@ -26,7 +26,7 @@ class Solver
     }
 
     method FindKnownPositivesAndNegatives(line: PuzzleLine)
-    requires line in Lines[..]
+    requires line in this.Lines[..]
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells)
@@ -42,17 +42,23 @@ class Solver
     {
         var totalCellCounts: array<int> := new int[line.Length]((_) => 0);
         var section: Section;
-        var cellCounts: array<int>;
+        var cellCounts: array<int> := new int[line.Length]((_) => 0);
         var possibleStartIndex: int, start: int, end: int;
         var cellCount: int, cell: PuzzleCell;
         for sectionKey: int := 0 to line.Sections.Length
         invariant 0 <= sectionKey <= line.Sections.Length
+        invariant forall j: int :: 0 <= j < this.Lines.Length ==>
+            this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+            this.Lines[j].Sections == old(this.Lines[j].Sections) &&
+            this.Lines[j].Length == old(this.Lines[j].Length)
+        invariant cellCounts.Length == totalCellCounts.Length
         {
             section := line.Sections[sectionKey];
             cellCounts := new int[line.Length]((_) => 0);
             // keep two counts: 1) all common cells for this section, and 2) cells where no section can be
             for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
             invariant 0 <= startIndexKey <= section.PossibleStartIndexes.Length
+            invariant cellCounts.Length == totalCellCounts.Length
             {
                 possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
                 start := possibleStartIndex;
@@ -81,6 +87,7 @@ class Solver
             // no possible cells, remove as a possibility
             for cellCountKey: int := 0 to cellCounts.Length
             invariant 0 <= cellCountKey <= cellCounts.Length
+            invariant cellCounts.Length == totalCellCounts.Length
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {

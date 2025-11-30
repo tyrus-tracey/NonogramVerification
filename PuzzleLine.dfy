@@ -50,6 +50,17 @@ class PuzzleLine
         
         SetSolveState(true);
     }
+
+    ghost predicate Valid()
+    reads this, this.Sections,
+        set c | exists m ::
+            0 <= m < this.Sections.Length &&
+            c == this.Sections[m].PossibleStartIndexes
+    {
+        forall i: int :: 0 <= i < this.Sections.Length ==>
+        forall j: int :: 0 <= j < this.Sections[i].PossibleStartIndexes.Length ==>
+            0 <= this.Sections[i].PossibleStartIndexes[j] + this.Sections[i].Length < this.Length
+    }
 }
 
 class Section
