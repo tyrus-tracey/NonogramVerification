@@ -25,6 +25,83 @@ class Solver
         }
     }
 
+    method EliminateImpossibleFits(line: PuzzleLine)
+    requires line in Lines[..]
+    ensures this.Lines == old(this.Lines)
+    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
+        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    modifies 
+        line,
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n]
+    {
+        var minimumStartIndex: int := 0;
+        var maximumStartIndex: int := 0;
+
+        if (line.Sections.Length == 0) {
+
+            for lineCellKey: int := 0 to |line.Cells| 
+            invariant 0 <= lineCellKey <= |line.Cells|
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Cells == old(this.Lines[i].Cells)
+            {
+                this.SetCellSolution(line.Cells[lineCellKey], CellValue.0);
+            }
+        }
+
+        //tighten range if negative cells start the line
+        for lineKey: int := 0 to line.Length
+        invariant 0 <= lineKey <= |line.Cells|
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Cells == old(this.Lines[i].Cells)
+        {
+            if (line.Cells[lineKey].AISolution == CellValue.0) {
+                minimumStartIndex := minimumStartIndex + 1;
+            } else {
+                break;
+            }
+        }
+
+        for lineKey: int := line.Length-1 downto 0
+        invariant 0 <= lineKey < |line.Cells|
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Cells == old(this.Lines[i].Cells)
+        {
+            if (line.Cells[lineKey].AISolution == CellValue.0) {
+                minimumStartIndex := minimumStartIndex - 1;
+            } else {
+                break;
+            }
+        }
+
+        for lineSectionKey: int := 0 to line.Sections.Length
+        invariant 0 <= lineSectionKey <= line.Sections.Length
+        {
+            var section: Section := line.Sections[lineSectionKey];
+            var newPossibleStartIndexes: array<nat>;// := clone array
+
+            for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
+            invariant 0 <= startIndexKey <= section.PossibleStartIndexes.Length
+            //must keep possibleStartIndex + section length in bounds
+            {
+                var possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
+                var testCell := line.Cells[possibleStartIndex + section.Length];
+
+                if(possibleStartIndex < minimumStartIndex || possibleStartIndex > maximumStartIndex) {
+                    //newPossibleStartIndexes := remove from array
+                }
+
+                if(exists testCell: PuzzleCell :: testCell.AISolution == CellValue.1) {
+                    // newPossibleStartIndexes := remove from array
+                }
+            }
+        }
+    }
+
+
     method FindKnownPositivesAndNegatives(line: PuzzleLine)
     requires line in this.Lines[..]
     ensures this.Lines == old(this.Lines)
