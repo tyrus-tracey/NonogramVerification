@@ -320,10 +320,13 @@ class Solver
 
     method FindCompletedSections(line: PuzzleLine)
     requires line in Lines[..]
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     ensures line.Sections == old(line.Sections)
     ensures this.Lines == old(this.Lines)
-    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
-        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
+        this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+        this.Lines[i].Valid()
     modifies 
         line,
         this.Lines[..],
@@ -340,7 +343,8 @@ class Solver
         invariant 0 <= sectionKey <= line.Sections.Length
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                 this.Lines[i].Cells == old(this.Lines[i].Cells) &&
-                this.Lines[i].Sections == old(this.Lines[i].Sections)
+                this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+                this.Lines[i].Valid()
         {
             var section := line.Sections[sectionKey];
 
@@ -365,9 +369,11 @@ class Solver
 
     method FindCompletedLines(line: PuzzleLine)
     requires line in Lines[..]
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
-    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
-        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
+        this.Lines[i].Cells == old(this.Lines[i].Cells)
     modifies 
         line,
         this.Lines[..],
@@ -401,7 +407,8 @@ class Solver
             for cellKey: int := 0 to |line.Cells|
             invariant 0 <= cellKey <= |line.Cells|
             invariant forall i: int :: 0 <= i < this.Lines.Length ==>
-                this.Lines[i].Cells == old(this.Lines[i].Cells)
+                this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+                this.Lines[i].Valid()
             {
                 var cell := line.Cells[cellKey];
                 if (cell.AISolution == CellValue.NULL)
