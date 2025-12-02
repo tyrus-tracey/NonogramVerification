@@ -25,6 +25,72 @@ class Solver
         }
     }
 
+    method Solve()
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
+    ensures forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid() &&
+        this.Lines[i].Cells == old(this.Lines[i].Cells)
+    modifies 
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < this.Lines[m].Sections.Length &&
+            c == this.Lines[m].Sections[n]
+    {
+        //NOTE: Original code has a bunch of stuff for UI/logging solutions/resetting puzzles that aren't relevant to verification, and are omitted.
+
+        var totalSolved: int := this.GetTotalSolved();
+        while(totalSolved < this.Puzzle.Cells.Length)
+        decreases this.Puzzle.Cells.Length - totalSolved
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+            this.Lines[i].Valid() &&
+            this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+            this.Lines[i].Sections == old(this.Lines[i].Sections)
+        {
+            for lineKey: int := 0 to this.Lines.Length
+            invariant 0 <= lineKey <= this.Lines.Length
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==> 
+                this.Lines[i].Valid() &&
+                this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+                this.Lines[i].Sections == old(this.Lines[i].Sections)
+            {
+                var line: PuzzleLine := this.Lines[lineKey];
+                if (!line.Solved)
+                {
+                    this.EliminateImpossibleFits(line);
+                }
+                if (!line.Solved)
+                {
+                    this.FindKnownPositivesAndNegatives(line);
+                }
+                if (!line.Solved)
+                {
+                    //TODO:
+                    //this.FindSectionDefiningChains(line);
+                }
+                if (!line.Solved)
+                {
+                    this.FindAnchoredSections(line);
+                }
+                if (!line.Solved)
+                {
+                    this.FindCompletedSections(line);
+                }
+                if (!line.Solved)
+                {
+                    this.FindCompletedLines(line);
+                }
+            }
+            totalSolved := this.GetTotalSolved();
+        }
+        
+    }
+
     method EliminateImpossibleFits(line: PuzzleLine)
     requires line in Lines[..]
     requires forall i: int :: 0 <= i < this.Lines.Length ==>
