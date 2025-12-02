@@ -114,11 +114,15 @@ class Solver
 
     method FindKnownPositivesAndNegatives(line: PuzzleLine)
     requires line in this.Lines[..]
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>
         this.Lines[j].Sections == old(this.Lines[j].Sections)
+    ensures forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     modifies 
         line,
         this.Lines[..],
@@ -192,9 +196,13 @@ class Solver
 
     method FindAnchoredSections(line: PuzzleLine)
     requires line in Lines[..]
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells)
+    ensures forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     modifies 
         line,
         this.Lines[..],
@@ -216,6 +224,8 @@ class Solver
             fillRange := null;
             for j: int := 0 to |line.Cells| 
             invariant 0 <= j <= |line.Cells|
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Valid()
             invariant forall j: int :: 0 <= j < this.Lines.Length ==>
                 this.Lines[j].Cells == old(this.Lines[j].Cells) &&
                 this.Lines[j].Sections == old(this.Lines[j].Sections)
@@ -240,6 +250,8 @@ class Solver
                 while i <= fillRange[1]
                 //invariant fillRange[0] <= i <= fillRange[1] + 1
                 invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Valid()
+                invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                     this.Lines[i].Sections == old(this.Lines[i].Sections)
                 {
@@ -262,6 +274,8 @@ class Solver
 
             for i := |line.Cells| downto 0
             invariant fillRange != null ==> fillRange.Length == 2
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Valid()
             invariant fillRange != null ==> 0 < fillRange[0] <= fillRange[1]
             {
                 if line.Cells[i].AISolution == CellValue.NULL
@@ -281,6 +295,8 @@ class Solver
                 //for i := fillRange[0] to fillRange[1] + 1
                 while k <= fillRange[1]
                 //invariant fillRange[0] <= i <= fillRange[1] + 1
+                invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Valid()
                 invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                     this.Lines[i].Sections == old(this.Lines[i].Sections)
@@ -396,10 +412,14 @@ class Solver
     // Propogates PuzzleCell value to all row/column Lines it belongs to.
     // If this solves a PuzzleLine, marks the PuzzleLine as solved.
     method SetCellSolution(puzzleCell: PuzzleCell, value: CellValue)
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells) &&
         this.Lines[j].Sections == old(this.Lines[j].Sections)
+    ensures forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     modifies 
         this.Lines[..],
         set c | exists m,n ::
@@ -413,6 +433,8 @@ class Solver
         var cell : PuzzleCell;
 
         for lineKey := 0 to this.Lines.Length
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+            this.Lines[i].Valid()
         invariant 0 <= lineKey <= this.Lines.Length
         invariant forall i:int :: 0 <= i < this.Lines.Length ==>
             this.Lines[i].Cells == old(this.Lines[i].Cells) &&
