@@ -11,27 +11,30 @@ class PuzzleLine
     var Solved: bool
 
     constructor()
-    ensures fresh(this.Cells)
+    ensures fresh(this.Cells) && Valid()
     {
         var cell: PuzzleCell := new PuzzleCell();
         Type := "";
         Index := 0;
         Length := 0;
         MinimumSectionLength := 0;
+        Sections := new Section[0];
         Cells := [cell, cell, cell, cell, cell];
         Solved := false;
     }
 
     method SetSolveState(state: bool)
+    requires Valid()
     modifies this`Solved
-    ensures Solved == state
+    ensures Solved == state && Valid()
     {
         Solved := state;
     }
     
     method UpdateCells(puzzleCell: PuzzleCell, value: CellValue)
+    requires Valid()
     modifies this`Solved, this.Cells[..]
-    ensures this.Sections == old(this.Sections)
+    ensures this.Sections == old(this.Sections) && Valid()
     {
         var cellsSolved : int := 0;
 
@@ -52,10 +55,19 @@ class PuzzleLine
     }
 
     ghost predicate Valid()
-    reads this, this.Sections,
+    reads *
+    // something more like one of these is the sort of reads clause I actually want
+    // but it gives a message that set comprehensions in predicates cannot depend on references
+    // so not sure if there's any way of getting this approach to work
+    /*
+        set c | exists m,n ::
+            0 <= m < this.Sections.Length &&
+            0 <= n < this.Sections[m].PossibleStartIndexes.Length &&
+            c == this.Sections[m].PossibleStartIndexes
         set c | exists m ::
             0 <= m < this.Sections.Length &&
-            c == this.Sections[m].PossibleStartIndexes
+            c == this.Sections[m]
+    */
     {
         forall i: int :: 0 <= i < this.Sections.Length ==>
         forall j: int :: 0 <= j < this.Sections[i].PossibleStartIndexes.Length ==>
