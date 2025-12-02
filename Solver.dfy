@@ -203,7 +203,8 @@ class Solver
         this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
-        this.Lines[j].Cells == old(this.Lines[j].Cells)
+        this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+        this.Lines[j].Sections == old(this.Lines[j].Sections)
     ensures forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
     modifies 
@@ -326,6 +327,7 @@ class Solver
     ensures this.Lines == old(this.Lines)
     ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
         this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+        this.Lines[i].Sections == old(this.Lines[i].Sections) &&
         this.Lines[i].Valid()
     modifies 
         line,
@@ -373,7 +375,8 @@ class Solver
         this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
-        this.Lines[i].Cells == old(this.Lines[i].Cells)
+        this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+        this.Lines[i].Sections == old(this.Lines[i].Sections)
     modifies 
         line,
         this.Lines[..],
@@ -408,6 +411,7 @@ class Solver
             invariant 0 <= cellKey <= |line.Cells|
             invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                 this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+                this.Lines[i].Sections == old(this.Lines[i].Sections) &&
                 this.Lines[i].Valid()
             {
                 var cell := line.Cells[cellKey];
