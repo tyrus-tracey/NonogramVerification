@@ -16,7 +16,7 @@ class PuzzleLine
         var cell: PuzzleCell := new PuzzleCell();
         Type := "";
         Index := 0;
-        Length := 0;
+        Length := 5;
         MinimumSectionLength := 0;
         Sections := new Section[0];
         Cells := [cell, cell, cell, cell, cell];
@@ -69,6 +69,7 @@ class PuzzleLine
             c == this.Sections[m]
     */
     {
+        Length == |Cells| &&
         forall i: int :: 0 <= i < this.Sections.Length ==>
         forall j: int :: 0 <= j < this.Sections[i].PossibleStartIndexes.Length ==>
             0 <= this.Sections[i].PossibleStartIndexes[j] + this.Sections[i].Length < this.Length
