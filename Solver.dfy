@@ -59,9 +59,6 @@ class Solver
         }
 
         //tighten range if negative cells start the line
-        //originally, this for loop and the next were based on line.Length, 
-        //however, this is equivalent to |line.Cells| and without using |line.Cells|
-        //it becomes impossible to verify that the loop remains in bounds
         for lineKey: int := 0 to line.Length
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                 this.Lines[i].Valid()
