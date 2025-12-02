@@ -211,6 +211,8 @@ class Solver
             this.Lines[j].Cells == old(this.Lines[j].Cells) &&
             this.Lines[j].Sections == old(this.Lines[j].Sections) &&
             this.Lines[j].Length == old(this.Lines[j].Length)
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+            this.Lines[i].Valid()
         invariant cellCounts.Length == totalCellCounts.Length
         {
             section := line.Sections[sectionKey];
@@ -218,13 +220,25 @@ class Solver
             // keep two counts: 1) all common cells for this section, and 2) cells where no section can be
             for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
             invariant 0 <= startIndexKey <= section.PossibleStartIndexes.Length
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Valid()
             invariant cellCounts.Length == totalCellCounts.Length
+            invariant forall j: int :: 0 <= j < this.Lines.Length ==>
+                this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+                this.Lines[j].Sections == old(this.Lines[j].Sections) &&
+                this.Lines[j].Length == old(this.Lines[j].Length)
             {
                 possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
                 start := possibleStartIndex;
                 end := start + section.Length - 1;
 
                 for i: int := start to end + 1
+                invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                    this.Lines[i].Valid()
+                invariant forall j: int :: 0 <= j < this.Lines.Length ==>
+                    this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+                    this.Lines[j].Sections == old(this.Lines[j].Sections) &&
+                    this.Lines[j].Length == old(this.Lines[j].Length)
                 {
                     cellCounts[i] := cellCounts[i] + 1;
                     totalCellCounts[i] := totalCellCounts[i] + 1;
@@ -233,6 +247,12 @@ class Solver
             // common to all possibilities, solve as positive
             for cellCountKey: int := 0 to cellCounts.Length
             invariant 0 <= cellCountKey <= cellCounts.Length
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Valid()
+            invariant forall j: int :: 0 <= j < this.Lines.Length ==>
+                this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+                this.Lines[j].Sections == old(this.Lines[j].Sections) &&
+                this.Lines[j].Length == old(this.Lines[j].Length)
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {
@@ -248,6 +268,12 @@ class Solver
             for cellCountKey: int := 0 to cellCounts.Length
             invariant 0 <= cellCountKey <= cellCounts.Length
             invariant cellCounts.Length == totalCellCounts.Length
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+                this.Lines[i].Valid()
+            invariant forall j: int :: 0 <= j < this.Lines.Length ==>
+                this.Lines[j].Cells == old(this.Lines[j].Cells) &&
+                this.Lines[j].Sections == old(this.Lines[j].Sections) &&
+                this.Lines[j].Length == old(this.Lines[j].Length)
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {
@@ -260,7 +286,6 @@ class Solver
                 }
             }
         }
-        
     }
 
     method FindAnchoredSections(line: PuzzleLine)
