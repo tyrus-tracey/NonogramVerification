@@ -27,6 +27,8 @@ class Solver
 
     method EliminateImpossibleFits(line: PuzzleLine)
     requires line in Lines[..]
+    requires line.Valid()
+    ensures line.Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells)
@@ -43,7 +45,8 @@ class Solver
 
         if (line.Sections.Length == 0) {
 
-            for lineCellKey: int := 0 to |line.Cells| 
+            for lineCellKey: int := 0 to line.Length 
+            invariant line.Valid()
             invariant 0 <= lineCellKey <= |line.Cells|
             invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells)
@@ -53,8 +56,12 @@ class Solver
         }
 
         //tighten range if negative cells start the line
+        //originally, this for loop and the next were based on line.Length, 
+        //however, this is equivalent to |line.Cells| and without using |line.Cells|
+        //it becomes impossible to verify that the loop remains in bounds
         for lineKey: int := 0 to line.Length
-        invariant 0 <= lineKey <= |line.Cells|
+        invariant line.Valid()
+        invariant 0 <= lineKey <= |line.Cells| 
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells)
         {
@@ -65,8 +72,10 @@ class Solver
             }
         }
 
-        for lineKey: int := line.Length-1 downto 0
-        invariant 0 <= lineKey < |line.Cells|
+        //tighten range if negative cells end the line
+        for lineKey: int := |line.Cells| downto 0
+        invariant line.Valid()
+        invariant 0 <= lineKey <= |line.Cells|
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells)
         {
@@ -79,9 +88,10 @@ class Solver
 
         for lineSectionKey: int := 0 to line.Sections.Length
         invariant 0 <= lineSectionKey <= line.Sections.Length
+        invariant line.Valid()
         {
             var section: Section := line.Sections[lineSectionKey];
-            var newPossibleStartIndexes: array<nat>;// := clone array
+            var newPossibleStartIndexes: array<nat>;
 
             for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
             invariant 0 <= startIndexKey <= section.PossibleStartIndexes.Length
