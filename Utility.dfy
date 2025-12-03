@@ -3,20 +3,30 @@ include "PuzzleLine.dfy"
 class Utility {
 
     //remove a nat from an array of nats
-    method RemoveFromArray(source: array<nat>, value: nat) returns (copy: array<nat>)
+    method RemoveFromArray(source: array<nat>, key: nat) returns (copy: array<nat>)
     requires source.Length > 1
+    requires key < source.Length
     ensures copy.Length == source.Length - 1
+    ensures forall i: nat :: 0 <= i < key ==> source[i] == copy[i]
+    ensures forall j: nat :: source.Length > j > key ==> source[j] == copy[j-1]
     {
         copy := new nat[source.Length - 1];
-        var copyIndex: nat := 0;
-        for i: nat := 0 to source.Length 
-        invariant 0 <= copyIndex <= copy.Length
+        for i: nat := 0 to key
+        invariant 0 <= i <= key
+        invariant forall k: nat :: 0 <= k < i ==> source[k] == copy[k]
         {
-            if(source[i] != value) {
-                copy[copyIndex] := source[i];
-                copyIndex := copyIndex + 1;
-            }
+            copy[i] := source[i];
+            
         }
+
+        for j: nat := key + 1 to source.Length
+        invariant key + 1 <= j <= source.Length
+        invariant forall k: nat :: key+1 <= k < j ==> source[k] == copy[k-1]
+        {
+            copy[j-1] := source[j];
+        }
+
+        return copy;
     }
 
     method CloneArray(a: array<nat>) returns (copy: array<nat>) 
@@ -49,5 +59,11 @@ class Utility {
         }
 
         return index;
+    }
+
+    method PushToArray(a: array<Chain>, chain: Chain) returns (result: array<Chain>)
+    ensures result.Length == a.Length + 1
+    {
+        
     }
 }

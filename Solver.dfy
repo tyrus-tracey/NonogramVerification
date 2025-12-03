@@ -178,11 +178,13 @@ class Solver
                 var testCell := line.Cells[possibleStartIndex + section.Length];
 
                 if(possibleStartIndex < minimumStartIndex || possibleStartIndex > maximumStartIndex) {
-                    // TODO: newPossibleStartIndexes := remove from array
+                    // TODO: newPossibleStartIndexes := remove from array'
+                    //newPossibleStartIndexes := Utility.RemoveFromArray(newPossibleStartIndexes, possibleStartIndex);
                 }
 
                 if(exists testCell: PuzzleCell :: testCell.AISolution == CellValue.1) {
                     //  TODO: newPossibleStartIndexes := remove from array
+                    //newPossibleStartIndexes := Utility.RemoveFromArray(newPossibleStartIndexes, possibleStartIndex);
                 }
 
                 // TODO: known impossible Cell
@@ -465,7 +467,7 @@ class Solver
             if cell.AISolution == CellValue.1 {
                 if lastValue != CellValue.1 {
                     chain := new Chain(cellKey, 1);
-                    // TODO: push to array
+                    chains := Utility.PushToArray(chains, chain);
                 } else if (chain.Length > 0) {
                     chain.Length := chain.Length + 1;
                 }
