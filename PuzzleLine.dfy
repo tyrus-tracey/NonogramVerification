@@ -9,9 +9,13 @@ class PuzzleLine
     var Sections: array<Section>
     var Cells: seq<PuzzleCell>
     var Solved: bool
+    var CellsSolved: nat
 
     constructor()
-    ensures fresh(this.Cells) && Valid()
+    ensures fresh(this.Cells) && Valid() && Type == "" &&
+        Index == 0 && Length == 5 && MinimumSectionLength == 0 &&
+        fresh(Sections) && fresh(Cells) && Solved == false &&
+        CellsSolved == 0
     {
         var cell: PuzzleCell := new PuzzleCell();
         Type := "";
@@ -21,6 +25,7 @@ class PuzzleLine
         Sections := new Section[0];
         Cells := [cell, cell, cell, cell, cell];
         Solved := false;
+        CellsSolved := 0;
     }
 
     method SetSolveState(state: bool)
@@ -33,10 +38,11 @@ class PuzzleLine
     
     method UpdateCells(puzzleCell: PuzzleCell, value: CellValue)
     requires Valid()
-    modifies this`Solved, this.Cells[..]
+    modifies this`Solved, this`CellsSolved, this.Cells[..]
     ensures this.Sections == old(this.Sections) && Valid()
+    ensures old(this.CellsSolved) <= this.CellsSolved
     {
-        var cellsSolved : int := 0;
+        this.CellsSolved := 0;
 
         for cellKey : int := 0 to |this.Cells|
         invariant 0 <= cellKey <= |this.Cells|
@@ -45,9 +51,9 @@ class PuzzleLine
             var cell : PuzzleCell := this.Cells[cellKey];
             if (cell.Index == puzzleCell.Index) {
                 cell.SetAISolution(value);
-                cellsSolved := cellsSolved + 1;
+                this.CellsSolved := this.CellsSolved + 1;
             } else if (cell.AISolution == NULL) {
-                cellsSolved := cellsSolved + 1;
+                this.CellsSolved := this.CellsSolved + 1;
             }
         }
         
