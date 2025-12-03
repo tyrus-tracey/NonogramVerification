@@ -7,24 +7,28 @@ class Solver
     var Lines: array<PuzzleLine>
     var Puzzle: Puzzle
     var Utility: Utility
+    var TotalSolved: nat
 
     constructor(puzzle: Puzzle)
+    ensures Puzzle == puzzle && fresh(Utility) && TotalSolved == 0
     {
         Puzzle := puzzle;
         Utility := new Utility;
+        TotalSolved := 0;
     }
 
-    method GetTotalSolved() returns (total: int)
+    method UpdateTotalSolved()
+    ensures this.TotalSolved >= old(this.TotalSolved)
+    ensures this.TotalSolved <= this.Puzzle.Cells.Length
+    modifies this`TotalSolved
     {
-        total := 0;
+        TotalSolved := 0;
         var cellKey: int;
 
-        for cellKey := 0 to this.Puzzle.Cells.Length
+        for lineKey := 0 to this.Lines.Length
+        invariant 0 <= lineKey <= this.Lines.Length
         {
-            if (this.Puzzle.Cells[cellKey].AISolution != CellValue.NULL)
-            {
-                total := total + 1;
-            }
+            TotalSolved := TotalSolved + this.Lines[lineKey].CellsSolved;
         }
     }
 
@@ -45,11 +49,9 @@ class Solver
             0 <= n < this.Lines[m].Sections.Length &&
             c == this.Lines[m].Sections[n]
     {
-        //NOTE: Original code has a bunch of stuff for UI/logging solutions/resetting puzzles that aren't relevant to verification, and are omitted.
 
-        var totalSolved: int := this.GetTotalSolved();
-        while(totalSolved < this.Puzzle.Cells.Length)
-        decreases this.Puzzle.Cells.Length - totalSolved
+        while(this.TotalSolved < this.Puzzle.Cells.Length)
+        decreases this.Puzzle.Cells.Length - this.TotalSolved
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
             this.Lines[i].Valid() &&
             this.Lines[i].Cells == old(this.Lines[i].Cells) &&
@@ -89,7 +91,7 @@ class Solver
                     this.FindCompletedLines(line);
                 }
             }
-            totalSolved := this.GetTotalSolved();
+            UpdateTotalSolved();
         }
         
     }
