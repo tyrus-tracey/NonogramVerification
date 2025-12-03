@@ -57,7 +57,9 @@ class PuzzleLine
             }
         }
         
-        SetSolveState(true);
+        if (this.CellsSolved == this.Length) {
+            SetSolveState(true);
+        }
     }
 
     ghost predicate Valid()
