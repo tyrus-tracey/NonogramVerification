@@ -512,7 +512,8 @@ class Solver
     ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
         this.Lines[i].Cells == old(this.Lines[i].Cells) &&
         this.Lines[i].Sections == old(this.Lines[i].Sections) &&
-        this.Lines[i].Valid()
+        this.Lines[i].Valid() && 
+        old(this.Lines[i].CellsSolved) <= this.Lines[i].CellsSolved
     modifies 
         line,
         this.Lines[..],
@@ -527,10 +528,12 @@ class Solver
     {
         for sectionKey: int := 0 to line.Sections.Length
         invariant 0 <= sectionKey <= line.Sections.Length
+        invariant line in this.Lines[..]
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                 this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                 this.Lines[i].Sections == old(this.Lines[i].Sections) &&
-                this.Lines[i].Valid()
+                this.Lines[i].Valid() &&
+                old(this.Lines[i].CellsSolved) <= this.Lines[i].CellsSolved
         {
             var section := line.Sections[sectionKey];
 
@@ -561,6 +564,7 @@ class Solver
     ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
         this.Lines[i].Cells == old(this.Lines[i].Cells) &&
         this.Lines[i].Sections == old(this.Lines[i].Sections)
+    ensures old(line.CellsSolved) <= line.CellsSolved
     modifies 
         line,
         this.Lines[..],
@@ -597,6 +601,8 @@ class Solver
                 this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                 this.Lines[i].Sections == old(this.Lines[i].Sections) &&
                 this.Lines[i].Valid()
+            invariant line in this.Lines[..] && 
+                old(line.CellsSolved) <= line.CellsSolved
             {
                 var cell := line.Cells[cellKey];
                 if (cell.AISolution == CellValue.NULL)
@@ -617,7 +623,7 @@ class Solver
         this.Lines[j].Cells == old(this.Lines[j].Cells) &&
         this.Lines[j].Sections == old(this.Lines[j].Sections)
     ensures forall i: int :: 0 <= i < this.Lines.Length ==>
-        this.Lines[i].Valid()
+        this.Lines[i].Valid() && old(this.Lines[i].CellsSolved) <= this.Lines[i].CellsSolved
     modifies 
         this.Lines[..],
         set c | exists m,n ::
@@ -636,7 +642,8 @@ class Solver
         invariant 0 <= lineKey <= this.Lines.Length
         invariant forall i:int :: 0 <= i < this.Lines.Length ==>
             this.Lines[i].Cells == old(this.Lines[i].Cells) &&
-            this.Lines[i].Sections == old(this.Lines[i].Sections)
+            this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+            old(this.Lines[i].CellsSolved) <= this.Lines[i].CellsSolved
         {   
             line := this.Lines[lineKey];
             isRow := line.Type == "row" && line.Index == puzzleCell.Row;
