@@ -5,22 +5,34 @@ class Solver
 {
     var Lines: array<PuzzleLine>
     var Puzzle: Puzzle
+    var TotalSolved: int
 
     constructor(puzzle: Puzzle)
     {
         Puzzle := puzzle;
+        TotalSolved := 0;
     }
 
     method GetTotalSolved() returns (total: int)
     {
-        total := 0;
+        return TotalSolved;
+    }
+
+    method UpdateTotalSolved()
+    ensures this.TotalSolved >= old(this.TotalSolved)
+    ensures this.TotalSolved <= this.Puzzle.Cells.Length
+    modifies this`TotalSolved
+    {
+        TotalSolved := 0;
         var cellKey: int;
 
         for cellKey := 0 to this.Puzzle.Cells.Length
+        invariant 0 <= cellKey <= this.Puzzle.Cells.Length
+        invariant 0 <= TotalSolved <= cellKey
         {
             if (this.Puzzle.Cells[cellKey].AISolution != CellValue.NULL)
             {
-                total := total + 1;
+                TotalSolved := TotalSolved + 1;
             }
         }
     }
@@ -28,9 +40,17 @@ class Solver
     method Solve()
     requires forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
+    requires forall i:int :: 0 <= i < this.Lines.Length ==>
+        forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+            this.Lines[i].Cells[j].AISolution == CellValue.NULL
+    ensures this.Puzzle.Cells.Length == old(this.Puzzle.Cells.Length)
     ensures forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid() &&
-        this.Lines[i].Cells == old(this.Lines[i].Cells)
+        this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+        this.Lines[i].Sections == old(this.Lines[i].Sections)
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         this.Lines[..],
         set c | exists m,n ::
@@ -44,20 +64,28 @@ class Solver
     {
         //NOTE: Original code has a bunch of stuff for UI/logging solutions/resetting puzzles that aren't relevant to verification, and are omitted.
 
-        var totalSolved: int := this.GetTotalSolved();
-        while(totalSolved < this.Puzzle.Cells.Length)
-        decreases this.Puzzle.Cells.Length - totalSolved
+        var nCells: int := this.Puzzle.Cells.Length;
+        var totalSolved: int := 0;
+
+        while(totalSolved < nCells)
+        decreases nCells - totalSolved
+        invariant totalSolved <= nCells
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
             this.Lines[i].Valid() &&
             this.Lines[i].Cells == old(this.Lines[i].Cells) &&
             this.Lines[i].Sections == old(this.Lines[i].Sections)
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
         {
             for lineKey: int := 0 to this.Lines.Length
             invariant 0 <= lineKey <= this.Lines.Length
-            invariant forall i: int :: 0 <= i < this.Lines.Length ==> 
-                this.Lines[i].Valid() &&
-                this.Lines[i].Cells == old(this.Lines[i].Cells) &&
-                this.Lines[i].Sections == old(this.Lines[i].Sections)
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==> this.Lines[i].Valid() 
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==> this.Lines[i].Cells == old(this.Lines[i].Cells) 
+            invariant forall i: int :: 0 <= i < this.Lines.Length ==> this.Lines[i].Sections == old(this.Lines[i].Sections)
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 var line: PuzzleLine := this.Lines[lineKey];
                 if (!line.Solved)
@@ -79,11 +107,15 @@ class Solver
                 }
                 if (!line.Solved)
                 {
-                    this.FindCompletedSections(line);
+                    //this.FindCompletedSections(line); TODO: Uncomment when implemented.
                 }
                 if (!line.Solved)
                 {
                     this.FindCompletedLines(line);
+                }
+                if (totalSolved > nCells)
+                {
+                    totalSolved := nCells;
                 }
             }
             totalSolved := this.GetTotalSolved();
@@ -98,8 +130,14 @@ class Solver
     // ensures forall i: int :: 0 <= i < this.Lines.Length ==>
     //     this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
-    ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
-        this.Lines[j].Cells == old(this.Lines[j].Cells)
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
+        this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+        this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+        this.Lines[i].Valid()
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+        forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+            old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         line,
         this.Lines[..],
@@ -118,7 +156,12 @@ class Solver
                 this.Lines[i].Valid()
             invariant 0 <= lineCellKey <= |line.Cells|
             invariant forall i: int :: 0 <= i < this.Lines.Length ==>
-                    this.Lines[i].Cells == old(this.Lines[i].Cells)
+                this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+                this.Lines[i].Cells == old(this.Lines[i].Cells)
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+                forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                    old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> 
+                        this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 this.SetCellSolution(line.Cells[lineCellKey], CellValue.0);
             }
@@ -130,7 +173,12 @@ class Solver
                 this.Lines[i].Valid()
         invariant 0 <= lineKey <= |line.Cells| 
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
-                    this.Lines[i].Cells == old(this.Lines[i].Cells)
+            this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+            this.Lines[i].Cells == old(this.Lines[i].Cells)
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+        forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+            old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Lines[i].Cells[j].AISolution != CellValue.NULL
         {
             if (line.Cells[lineKey].AISolution == CellValue.0) {
                 minimumStartIndex := minimumStartIndex + 1;
@@ -145,7 +193,12 @@ class Solver
                 this.Lines[i].Valid()
         invariant 0 <= lineKey <= |line.Cells|
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
-                    this.Lines[i].Cells == old(this.Lines[i].Cells)
+            this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+            this.Lines[i].Cells == old(this.Lines[i].Cells)
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+        forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+            old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Lines[i].Cells[j].AISolution != CellValue.NULL
         {
             if (line.Cells[lineKey].AISolution == CellValue.0) {
                 minimumStartIndex := minimumStartIndex - 1;
@@ -157,7 +210,13 @@ class Solver
         for lineSectionKey: int := 0 to line.Sections.Length
         invariant 0 <= lineSectionKey <= line.Sections.Length
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
-                this.Lines[i].Valid()
+            this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+            this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+            this.Lines[i].Valid()
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+        forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+            old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Lines[i].Cells[j].AISolution != CellValue.NULL
         {
             var section: Section := line.Sections[lineSectionKey];
             var newPossibleStartIndexes: array<nat>;
@@ -192,6 +251,9 @@ class Solver
         this.Lines[j].Sections == old(this.Lines[j].Sections)
     ensures forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         line,
         this.Lines[..],
@@ -213,6 +275,9 @@ class Solver
             this.Lines[j].Length == old(this.Lines[j].Length)
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
             this.Lines[i].Valid()
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
         invariant cellCounts.Length == totalCellCounts.Length
         {
             section := line.Sections[sectionKey];
@@ -227,6 +292,9 @@ class Solver
                 this.Lines[j].Cells == old(this.Lines[j].Cells) &&
                 this.Lines[j].Sections == old(this.Lines[j].Sections) &&
                 this.Lines[j].Length == old(this.Lines[j].Length)
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
                 start := possibleStartIndex;
@@ -239,6 +307,9 @@ class Solver
                     this.Lines[j].Cells == old(this.Lines[j].Cells) &&
                     this.Lines[j].Sections == old(this.Lines[j].Sections) &&
                     this.Lines[j].Length == old(this.Lines[j].Length)
+                invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
                 {
                     cellCounts[i] := cellCounts[i] + 1;
                     totalCellCounts[i] := totalCellCounts[i] + 1;
@@ -253,6 +324,9 @@ class Solver
                 this.Lines[j].Cells == old(this.Lines[j].Cells) &&
                 this.Lines[j].Sections == old(this.Lines[j].Sections) &&
                 this.Lines[j].Length == old(this.Lines[j].Length)
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+                forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {
@@ -274,6 +348,9 @@ class Solver
                 this.Lines[j].Cells == old(this.Lines[j].Cells) &&
                 this.Lines[j].Sections == old(this.Lines[j].Sections) &&
                 this.Lines[j].Length == old(this.Lines[j].Length)
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 if (0 <= cellCountKey < |line.Cells|)
                 {
@@ -298,6 +375,9 @@ class Solver
         this.Lines[j].Sections == old(this.Lines[j].Sections)
     ensures forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         line,
         this.Lines[..],
@@ -324,6 +404,9 @@ class Solver
             invariant forall j: int :: 0 <= j < this.Lines.Length ==>
                 this.Lines[j].Cells == old(this.Lines[j].Cells) &&
                 this.Lines[j].Sections == old(this.Lines[j].Sections)
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+                forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 if line.Cells[j].AISolution == CellValue.NULL
                 {
@@ -349,6 +432,9 @@ class Solver
                 invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                     this.Lines[i].Sections == old(this.Lines[i].Sections)
+                invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+                    forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                    old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
                 {
                     if (0 <= i < |line.Cells|) 
                     // original code has simply line.cells[i] as the condition; 
@@ -372,6 +458,9 @@ class Solver
             invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                 this.Lines[i].Valid()
             invariant fillRange != null ==> 0 < fillRange[0] <= fillRange[1]
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+                forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 if line.Cells[i].AISolution == CellValue.NULL
                 {
@@ -395,6 +484,9 @@ class Solver
                 invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                     this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                     this.Lines[i].Sections == old(this.Lines[i].Sections)
+                invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+                    forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                    old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
                 {
                     if (0 <= k < |line.Cells|)
                     {
@@ -420,6 +512,9 @@ class Solver
         this.Lines[i].Cells == old(this.Lines[i].Cells) &&
         this.Lines[i].Sections == old(this.Lines[i].Sections) &&
         this.Lines[i].Valid()
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         line,
         this.Lines[..],
@@ -438,6 +533,9 @@ class Solver
                 this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                 this.Lines[i].Sections == old(this.Lines[i].Sections) &&
                 this.Lines[i].Valid()
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
         {
             var section := line.Sections[sectionKey];
 
@@ -467,7 +565,11 @@ class Solver
     ensures this.Lines == old(this.Lines)
     ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
         this.Lines[i].Cells == old(this.Lines[i].Cells) &&
-        this.Lines[i].Sections == old(this.Lines[i].Sections)
+        this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+        this.Lines[i].Valid()
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         line,
         this.Lines[..],
@@ -504,6 +606,9 @@ class Solver
                 this.Lines[i].Cells == old(this.Lines[i].Cells) &&
                 this.Lines[i].Sections == old(this.Lines[i].Sections) &&
                 this.Lines[i].Valid()
+            invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
             {
                 var cell := line.Cells[cellKey];
                 if (cell.AISolution == CellValue.NULL)
@@ -517,6 +622,7 @@ class Solver
     // Propogates PuzzleCell value to all row/column Lines it belongs to.
     // If this solves a PuzzleLine, marks the PuzzleLine as solved.
     method SetCellSolution(puzzleCell: PuzzleCell, value: CellValue)
+    requires value != CellValue.NULL
     requires forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
@@ -525,6 +631,10 @@ class Solver
         this.Lines[j].Sections == old(this.Lines[j].Sections)
     ensures forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>
+        forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+            old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Lines[i].Cells[j].AISolution != CellValue.NULL
     modifies 
         this.Lines[..],
         set c | exists m,n ::
@@ -544,6 +654,9 @@ class Solver
         invariant forall i:int :: 0 <= i < this.Lines.Length ==>
             this.Lines[i].Cells == old(this.Lines[i].Cells) &&
             this.Lines[i].Sections == old(this.Lines[i].Sections)
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>
+            forall j:int :: 0 <= j < |this.Lines[i].Cells| ==>
+                old(this.Lines[i].Cells[j].AISolution) != CellValue.NULL ==> this.Lines[i].Cells[j].AISolution != CellValue.NULL
         {   
             line := this.Lines[lineKey];
             isRow := line.Type == "row" && line.Index == puzzleCell.Row;

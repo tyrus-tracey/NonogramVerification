@@ -24,29 +24,35 @@ class PuzzleLine
     }
 
     method SetSolveState(state: bool)
-    requires Valid()
+    requires Valid() && state == true
     modifies this`Solved
-    ensures Solved == state && Valid()
+    ensures Solved == true && Valid()
     {
         Solved := state;
     }
     
     method UpdateCells(puzzleCell: PuzzleCell, value: CellValue)
-    requires Valid()
+    requires Valid() && value != CellValue.NULL
     modifies this`Solved, this.Cells[..]
-    ensures this.Sections == old(this.Sections) && Valid()
+    ensures this.Cells == old(this.Cells) && this.Sections == old(this.Sections) && Valid()
+    ensures forall j:int :: 0 <= j < |this.Cells| ==>
+            old(this.Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Cells[j].AISolution != CellValue.NULL
     {
         var cellsSolved : int := 0;
 
         for cellKey : int := 0 to |this.Cells|
         invariant 0 <= cellKey <= |this.Cells|
         invariant this.Cells == old(this.Cells)
+        invariant forall j:int :: 0 <= j < |this.Cells| ==>
+            old(this.Cells[j].AISolution) != CellValue.NULL ==> 
+            this.Cells[j].AISolution != CellValue.NULL
         {
             var cell : PuzzleCell := this.Cells[cellKey];
             if (cell.Index == puzzleCell.Index) {
                 cell.SetAISolution(value);
                 cellsSolved := cellsSolved + 1;
-            } else if (cell.AISolution == NULL) {
+            } else if (cell.AISolution == CellValue.NULL) {
                 cellsSolved := cellsSolved + 1;
             }
         }

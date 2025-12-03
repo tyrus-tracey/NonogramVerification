@@ -10,13 +10,17 @@ class PuzzleCell
     var AISolution: CellValue
 
     method SetAISolution(solution: CellValue)
-    modifies this
-    ensures AISolution == solution
+    requires solution != CellValue.NULL
+    modifies this`AISolution
+    ensures AISolution != CellValue.NULL
+    ensures old(AISolution) != CellValue.NULL ==> AISolution != CellValue.NULL
     {
         AISolution := solution;
     }
 
     constructor ()
+    ensures Index == 0 && Column == 0 && Row == 0 &&
+        Solution == CellValue.NULL && UserSolution == CellValue.NULL && AISolution == CellValue.NULL
     {
         Index := 0;
         Column := 0;
