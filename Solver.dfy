@@ -410,6 +410,75 @@ class Solver
         }
     }
 
+    method FindSectionDefiningChains(line: PuzzleLine)
+    requires line in Lines[..]
+    requires forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
+    ensures line.Sections == old(line.Sections)
+    ensures this.Lines == old(this.Lines)
+    ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
+        this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+        this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+        this.Lines[i].Valid()
+    modifies 
+        line,
+        this.Lines[..],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < |this.Lines[m].Cells| &&
+            c == this.Lines[m].Cells[n],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < this.Lines[m].Sections.Length &&
+            c == this.Lines[m].Sections[n]
+    {
+        var chains: array<Chain> := new Chain[0];
+        var lastValue: CellValue := CellValue.0;
+        
+        var sectionsSorted: array<Section> := new Section[0];
+        //sort sections
+
+        var firstSortedSection: Section := sectionsSorted[0];
+
+        for cellKey: nat := 0 to |line.Cells| 
+        {
+            var cell: PuzzleCell := line.Cells[cellKey];
+
+            var chain: Chain;
+            if cell.AISolution == CellValue.1 {
+                if lastValue != CellValue.1 {
+                    chain := new Chain(cellKey, 1);
+                    //push to array
+                } else if (chain.Length > 0) {
+                    chain.Length := chain.Length + 1;
+                }
+
+            }
+
+            lastValue := cell.AISolution;
+        }
+
+        //if a chain of connected cells with length 
+        //equal to the highest section is found
+        //surround it with negatives and mark it complete
+        for chainKey: nat := 0 to chains.Length {
+            var chain: Chain := chains[chainKey];
+
+            if(chain.Length == firstSortedSection.Length) {
+                if(chain.Start - 1 >= 0 
+                    && line.Cells[chain.Start - 1].AISolution != CellValue.0) {
+                    this.SetCellSolution(line.Cells[chain.Start - 1], CellValue.0);
+                }
+
+                if(chain.Start + firstSortedSection.Length < |line.Cells|
+                    && line.Cells[chain.Start + firstSortedSection.Length].AISolution != CellValue.0) {
+                    this.SetCellSolution(line.Cells[chain.Start + firstSortedSection.Length], CellValue.0);
+                }
+                firstSortedSection.Solved := true; 
+            }
+        }
+    }
+
     method FindCompletedSections(line: PuzzleLine)
     requires line in Lines[..]
     requires forall i: int :: 0 <= i < this.Lines.Length ==>
