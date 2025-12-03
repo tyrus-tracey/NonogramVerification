@@ -1,14 +1,17 @@
 include "PuzzleLine.dfy"
 include "Puzzle.dfy"
+include "Utility.dfy"
 
 class Solver
 {
     var Lines: array<PuzzleLine>
     var Puzzle: Puzzle
+    var Utility: Utility
 
     constructor(puzzle: Puzzle)
     {
         Puzzle := puzzle;
+        Utility := new Utility;
     }
 
     method GetTotalSolved() returns (total: int)
@@ -71,7 +74,7 @@ class Solver
                 if (!line.Solved)
                 {
                     //TODO:
-                    //this.FindSectionDefiningChains(line);
+                    this.FindSectionDefiningChains(line);
                 }
                 if (!line.Solved)
                 {
@@ -95,8 +98,8 @@ class Solver
     requires line in Lines[..]
     requires forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
-    // ensures forall i: int :: 0 <= i < this.Lines.Length ==>
-    //     this.Lines[i].Valid()
+    ensures forall i: int :: 0 <= i < this.Lines.Length ==>
+        this.Lines[i].Valid()
     ensures this.Lines == old(this.Lines)
     ensures forall j:int :: 0 <= j < this.Lines.Length ==>  
         this.Lines[j].Cells == old(this.Lines[j].Cells)
@@ -106,7 +109,11 @@ class Solver
         set c | exists m,n ::
             0 <= m < this.Lines.Length &&
             0 <= n < |this.Lines[m].Cells| &&
-            c == this.Lines[m].Cells[n]
+            c == this.Lines[m].Cells[n],
+        set c | exists m,n ::
+            0 <= m < this.Lines.Length &&
+            0 <= n < this.Lines[m].Sections.Length &&
+            c == this.Lines[m].Sections[n]
     {
         var minimumStartIndex: int := 0;
         var maximumStartIndex: int := 0;
@@ -158,25 +165,32 @@ class Solver
         invariant 0 <= lineSectionKey <= line.Sections.Length
         invariant forall i: int :: 0 <= i < this.Lines.Length ==>
                 this.Lines[i].Valid()
+        invariant forall i: int :: 0 <= i < this.Lines.Length ==>
+            this.Lines[i].Cells == old(this.Lines[i].Cells)
         {
             var section: Section := line.Sections[lineSectionKey];
-            var newPossibleStartIndexes: array<nat>;
+            var newPossibleStartIndexes: array<nat> := Utility.CloneArray(section.PossibleStartIndexes);
 
             for startIndexKey: int := 0 to section.PossibleStartIndexes.Length
             invariant 0 <= startIndexKey <= section.PossibleStartIndexes.Length
-            //must keep possibleStartIndex + section length in bounds
             {
                 var possibleStartIndex := section.PossibleStartIndexes[startIndexKey];
                 var testCell := line.Cells[possibleStartIndex + section.Length];
 
                 if(possibleStartIndex < minimumStartIndex || possibleStartIndex > maximumStartIndex) {
-                    //newPossibleStartIndexes := remove from array
+                    // TODO: newPossibleStartIndexes := remove from array
                 }
 
                 if(exists testCell: PuzzleCell :: testCell.AISolution == CellValue.1) {
-                    // newPossibleStartIndexes := remove from array
+                    //  TODO: newPossibleStartIndexes := remove from array
                 }
+
+                // TODO: known impossible Cell
             }
+            minimumStartIndex := minimumStartIndex + section.Length + 1;
+            maximumStartIndex := maximumStartIndex + section.Length + 1;
+
+            section.PossibleStartIndexes := newPossibleStartIndexes;
         }
     }
 
@@ -414,6 +428,7 @@ class Solver
     requires line in Lines[..]
     requires forall i: int :: 0 <= i < this.Lines.Length ==>
         this.Lines[i].Valid()
+    requires line.Sections.Length > 0
     ensures line.Sections == old(line.Sections)
     ensures this.Lines == old(this.Lines)
     ensures forall i:int :: 0 <= i < this.Lines.Length ==>  
@@ -434,21 +449,23 @@ class Solver
     {
         var chains: array<Chain> := new Chain[0];
         var lastValue: CellValue := CellValue.0;
-        
-        var sectionsSorted: array<Section> := new Section[0];
-        //sort sections
 
-        var firstSortedSection: Section := sectionsSorted[0];
+        var longestSectionIndex := Utility.FindLongestSection(line.Sections);
+        var longestSection: Section := line.Sections[longestSectionIndex];
 
         for cellKey: nat := 0 to |line.Cells| 
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>  
+            this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+            this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+            this.Lines[i].Valid()
         {
             var cell: PuzzleCell := line.Cells[cellKey];
 
-            var chain: Chain;
+            var chain: Chain := new Chain(cellKey, 0);
             if cell.AISolution == CellValue.1 {
                 if lastValue != CellValue.1 {
                     chain := new Chain(cellKey, 1);
-                    //push to array
+                    // TODO: push to array
                 } else if (chain.Length > 0) {
                     chain.Length := chain.Length + 1;
                 }
@@ -461,20 +478,25 @@ class Solver
         //if a chain of connected cells with length 
         //equal to the highest section is found
         //surround it with negatives and mark it complete
-        for chainKey: nat := 0 to chains.Length {
+        for chainKey: nat := 0 to chains.Length 
+        invariant forall i:int :: 0 <= i < this.Lines.Length ==>  
+            this.Lines[i].Cells == old(this.Lines[i].Cells) &&
+            this.Lines[i].Sections == old(this.Lines[i].Sections) &&
+            this.Lines[i].Valid()
+        {
             var chain: Chain := chains[chainKey];
 
-            if(chain.Length == firstSortedSection.Length) {
+            if(chain.Length == longestSection.Length) {
                 if(chain.Start - 1 >= 0 
                     && line.Cells[chain.Start - 1].AISolution != CellValue.0) {
                     this.SetCellSolution(line.Cells[chain.Start - 1], CellValue.0);
                 }
 
-                if(chain.Start + firstSortedSection.Length < |line.Cells|
-                    && line.Cells[chain.Start + firstSortedSection.Length].AISolution != CellValue.0) {
-                    this.SetCellSolution(line.Cells[chain.Start + firstSortedSection.Length], CellValue.0);
+                if(chain.Start + longestSection.Length < |line.Cells|
+                    && line.Cells[chain.Start + longestSection.Length].AISolution != CellValue.0) {
+                    this.SetCellSolution(line.Cells[chain.Start + longestSection.Length], CellValue.0);
                 }
-                firstSortedSection.Solved := true; 
+                longestSection.Solved := true; 
             }
         }
     }
